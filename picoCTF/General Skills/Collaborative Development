@@ -1,0 +1,53 @@
+Difficulty: Easy
+Description: "My team has been working very hard on new features for our flag printing program! I wonder how they'll work together?"
+
+Got a zip file with what looked like a basic Python script inside.
+
+👀 First Look
+Extracted the zip and found a git repo with a python script..
+print("Printing the flag...")
+Pretty basic. But the hints were talking about branches and merge conflicts, so figured there was more to it.
+
+🔎🔎 Finding the Branches:
+Ran "git branch -a" like the hint said and found 3 branches:
+
+feature/part-1
+feature/part-2
+feature/part-3
+
+Each one probably had a piece of the flag.
+
+〰️〰️The Merging Process:
+Had to set up git config first:
+#git config user.name "test"
+#git config user.email "test@test.com"
+
+Started merging branches one by one:
+#git merge feature/part-1
+This one went smooth.
+But then:
+#git merge feature/part-2
+Got hit with a merge conflict.
+#cat flag.py
+print("Printing the flag...")
+<<<<<<< HEAD
+print("picoCTF{t3@mw0rk_", end='')
+=======
+print("m@k3s_th3_dr3@m_", end='')
+>>>>>>> feature/part-2
+
+At first I thought I had to pick one or the other, but then realized - wait, these are probably meant to go together! Each branch has a different piece of the flag.
+So I edited the file to keep both lines:
+print("Printing the flag...")
+print("picoCTF{t3@mw0rk_", end='')
+print("m@k3s_th3_dr3@m_", end='')
+
+Then finished the merge:
+#git add flag.py
+#git commit -m "fixed conflict"
+Kept doing this for all the other branches. Each time there was a conflict, I just added the new piece to the existing ones.
+
+🚩🚩 Getting the Flag:
+After merging everything, ran the script:
+python flag.py
+Flag: picoCTF{t3@mw0rk_m@k3s_th3_dr3@m_w0rk_4_r34l}
