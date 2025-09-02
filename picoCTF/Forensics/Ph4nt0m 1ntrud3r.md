@@ -1,0 +1,19 @@
+**Ph4nt0m 1ntrud3r - CTF Writeup**\
+**Catagory - Forensic**\
+**Difficulty - Easy**\
+
+In this challenge we are given a .pcap file and goal is to find the flag
+
+Open it in wireshark and there is only 22 packets present.\
+While analyzing packets, some caught my eye which contain base64 encoded strings in the data.
+
+**Frame 6: ezF0X3c0cw== - {1t_w4s**\
+**Frame 11: MzE4ZGIyMg== - 318db22**\
+**Frame 14: XzM0c3lfdA== - _34sy_t**\
+**Frame 17: cGljb0NURg== - picoCTF**\
+**Frame 19: YmhfNHJfZg== - bh_4r_f**\
+**Frame 20: bnRfdGg0dA== - nt_th4t**
+
+Organizing these pieces gave us the flag:
+
+### picoCTF{1t_w4snt_th4t_34sy_tbh_4r_f318db22}
