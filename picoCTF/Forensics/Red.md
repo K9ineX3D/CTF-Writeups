@@ -1,8 +1,9 @@
 # Red - CTF Writeup
 
-**Category:** Forensics | **Difficulty:** Easy
+**Category: Forensics**\
+**Difficulty: Easy**
 
-## Solution
+## Solution:
 
 Download the PNG file - it's just a red image.
 
