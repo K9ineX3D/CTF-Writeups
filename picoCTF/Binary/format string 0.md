@@ -1,63 +1,63 @@
-format string 0
+# format string 0
 
-👉 What I Did:
+## 👉 What I Did:
 Connected to this burger shop challenge and it wanted me to help customers find burgers. Two customers: Patrick first, then Bob.
 
-Welcome to our newly-opened burger place Pico 'n Patty! Can you help the picky customers find their favorite burger?
-Here comes the first customer Patrick who wants a giant bite.
+Welcome to our newly-opened burger place Pico 'n Patty! Can you help the picky customers find their favorite burger?\
+Here comes the first customer Patrick who wants a giant bite.\
 Please choose from the following burgers: Breakf@st_Burger, Gr%114d_Cheese, Bac0n_D3luxe
 
-😶‍🌫️ Looking at the burger names, I immediately spotted Gr%114d_Cheese - that %114d looked like a format specifier.
+### 😶‍🌫️ Looking at the burger names, I immediately spotted Gr%114d_Cheese - that %114d looked like a format specifier.
 
-👉 Finding the Bug:
+## 👉 Finding the Bug:
 Checked the source code and found the issue in serve_patrick():
 
-int count = printf(choice1);
-if (count > 2 * BUFSIZE) {  // Need > 64 characters
-    serve_bob();
+int count = printf(choice1);\
+if (count > 2 * BUFSIZE) {  // Need > 64 characters\
+    serve_bob();\
 }
 
-Classic format string vulnerability - printf(choice1) with no format string! The program was basically doing printf(user_input) which lets me control printf behavior.
-Also found another one in serve_bob():
-printf(choice2);
+Classic format string vulnerability - printf(choice1) with no format string! The program was basically doing printf(user_input) which lets me control printf behavior.\
+Also found another one in serve_bob():\
+printf(choice2);\
 Same bug, but this one had a signal handler that would print the flag on segfault.
 
-🚀 My Attack Plan 🚀
+## 🚀 My Attack Plan 🚀
 Two phases:
 
 1) Get past Patrick - Need printf to output more than 64 characters to reach Bob
 2) Crash the program - Trigger segfault in Bob's section to get flag
 
-For phase 1, Gr%114d_Cheese should work because %114d prints a number with at least 114 characters of width.
+For phase 1, Gr%114d_Cheese should work because %114d prints a number with at least 114 characters of width.\
 For phase 2, I saw Cla%sic_Che%s%steak in Bob's menu - multiple %s format specifiers with no arguments should cause memory access violations.
 
-👉 Testing Different Options
-First tried the safe option:
-Enter your recommendation: Breakf@st_Burger
-Breakf@st_BurgerPatrick is still hungry!
+## 👉 Testing Different Options
+First tried the safe option:\
+Enter your recommendation: Breakf@st_Burger\
+Breakf@st_BurgerPatrick is still hungry!\
 Try to serve him something of larger size!
 
 Only printed 15 characters, not enough to advance.
 
-🚩 Getting the Flag
-Then tried my format string attack:
-👉 Phase 1:
-Enter your recommendation: Gr%114d_Cheese
+## 🚩 Getting the Flag
+Then tried my format string attack:\
+### 👉 Phase 1:
+Enter your recommendation: Gr%114d_Cheese\
 Gr                                                                                                           4202954_Cheese
 
 The %114d grabbed some random value from memory (4202954) and padded it to 114 characters. Total output way over 64 chars, so I advanced to Bob!
-👉 Phase 2:
-Enter your recommendation: Cla%sic_Che%s%steak
-ClaCla%sic_Che%s%steakic_Che(null)
+### 👉 Phase 2:
+Enter your recommendation: Cla%sic_Che%s%steak\
+ClaCla%sic_Che%s%steakic_Che(null)\
 picoCTF{7h3_cu570m3r_15_n3v3r_SEGFAULT_74f6c0e7}
 
 Perfect! The multiple %s specifiers tried to read memory as strings, eventually hit invalid memory, caused segfault, and the signal handler printed the flag.
 
-🤔🤔🤔 Why It Worked:
-The burger names weren't just random - they were crafted to exploit format string bugs:
-%114d creates massive output to pass the character count check
+## 🤔🤔🤔 Why It Worked:
+The burger names weren't just random - they were crafted to exploit format string bugs:\
+%114d creates massive output to pass the character count check\
 %s%s%steak causes memory access violations when printf tries to read non-existent arguments as string pointers
 
 Pretty clever challenge that teaches format string vulnerabilities through a fun burger shop scenario.
 
-🚩🚩🚩 picoCTF{7h3_cu570m3r_15_n3v3r_SEGFAULT_74f6c0e7}
+# 🚩🚩🚩 picoCTF{7h3_cu570m3r_15_n3v3r_SEGFAULT_74f6c0e7}
