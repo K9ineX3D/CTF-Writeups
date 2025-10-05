@@ -42,8 +42,8 @@ python3 -c 'import pty; pty.spawn("/bin/bash")'
 Now just visit the home directory of magnus and you'll find the user flag 🚩
 
 ## 🧑‍💻 Privilege Escalation
-After gaining initial access as the asterisk user, I needed to escalate privileges to root. Time to enumerate.
-**● Finding the Path**
+After gaining initial access as the asterisk user, I needed to escalate privileges to root. Time to enumerate.\
+**● Finding the Path**\
 First thing I always do after getting a foothold - check what I can run with sudo:
 ```bash
 sudo -l
