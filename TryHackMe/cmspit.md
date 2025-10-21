@@ -34,16 +34,18 @@ Visiting port 80 provides us with a login page.
 
 ***● What is the name of the Content Management System (CMS) installed on the server?***
 
-Ans: The CMS name is displayed on the login page (cockpit).
+The CMS name is displayed on the login page
+Ans: cockpit
 
 ***● What is the version of the Content Management System (CMS) installed on the server?***
 
-Ans: TThe version number can be found in the login page's source code. Right-click the page, open the source code, and examine it carefully (0.11.1).
+The version number can be found in the login page's source code. Right-click the page, open the source code, and examine it carefully
+Ans: 0.11.1
 
 ***● What is the path that allow user enumeration?***
 
-**Path: /auth/check**\
 This endpoint in Cockpit CMS 0.11.1 is vulnerable to NoSQL Injection (CVE-2020-35846), allowing attackers to enumerate valid usernames.
+Ans: /auth/check
 
 **Exploitation:**\
 There’s both an automated and a manual exploit; let’s try the automated one first.
@@ -63,3 +65,16 @@ To manually test for vulnerabilities, use Burp Suite to intercept login attempts
 {"auth":{"user":{"$func":"var_dump"},"password":"admin"},"csfr":"eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJjc2ZyIjoibG9naW4ifQ.dlnu8XjKIvB6mGfBlOgjtnixirAIsnzf5QTAEP1mJJc"}
 ```
 This is the one I used
+
+***● What is the path that allows you to change user account passwords?***
+
+Review the exploit file to identify the path for changing the password.
+Ans: /auth/requestreset
+
+***● Compromise the Content Management System (CMS). What is Skidy's email.***
+
+Use the exploit and compromise user skidy
+Ans: skidy@tryhackme.fakemail
+
+***● What is the web flag?***
+
