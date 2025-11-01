@@ -81,7 +81,8 @@ Enter Command $pwd
 system/var/www/html
 ```
 
-To overcome this limitation, a custom modified version of the exploit was created.
+To overcome this limitation, a custom modified version of the exploit was created and uploaded.\
+Download and run.
 
 ## Privilege Escalation
 
